@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>COLORXL — Solid Color Generator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f0ece4;
+    --accent: #e03a00;
+    --black: #111;
+    --border: #bbb;
+    --card: #fff;
+  }
+
+  body {
+    background-color: var(--bg);
+    background-image:
+      linear-gradient(rgba(0,0,0,0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,0,0,0.07) 1px, transparent 1px);
+    background-size: 28px 28px;
+    font-family: 'IBM Plex Mono', monospace;
+    min-height: 100vh;
+    color: var(--black);
+  }
+
+  /* ─── HEADER ─── */
+  header {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 36px 24px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .logo { line-height: 1; }
+  .logo .l1 { font-family: 'Bebas Neue', sans-serif; font-size: 52px; letter-spacing: 2px; }
+  .logo .l1 span { color: var(--accent); }
+  .logo .sub { font-size: 10px; letter-spacing: 4px; color: #888; margin-top: 2px; }
+
+  .corner-info { text-align: right; font-size: 10px; letter-spacing: 2px; color: #888; line-height: 1.8; padding-top: 6px; }
+
+  hr.divider {
+    max-width: 680px; margin: 18px auto 0;
+    border: none; border-top: 1.5px solid #ccc;
+  }
+
+  /* ─── TABS ─── */
+  .tabs-wrap { max-width: 680px; margin: 20px auto 0; padding: 0 24px; }
+
+  .tabs {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    border: 2px solid var(--black);
+    overflow: hidden;
+  }
+
+  .tab {
+    padding: 14px 8px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    letter-spacing: 2px;
+    text-align: center;
+    cursor: pointer;
+    background: var(--card);
+    border: none;
+    border-right: 2px solid var(--black);
+    transition: background 0.15s, color 0.15s;
+    color: var(--black);
+  }
+  .tab:last-child { border-right: none; }
+  .tab.active { background: var(--black); color: #fff; }
+  .tab:hover:not(.active) { background: #eee; }
+
+  /* ─── PANELS ─── */
+  .panel-wrap { max-width: 680px; margin: 0 auto; padding: 0 24px 40px; }
+
+  .panel {
+    display: none;
+    background: var(--card);
+    border: 2px solid var(--black);
+    border-top: none;
+    padding: 28px 28px 24px;
+    box-shadow: 5px 5px 0 var(--black);
+  }
+  .panel.active { display: block; }
+
+  /* ─── LABELS ─── */
+  .field-label {
+    font-size: 9px; letter-spacing: 3px; color: #999;
+    text-transform: uppercase; margin-bottom: 6px; display: block;
+  }
+
+  /* ─── COLOR PICKER WIDGET ─── */
+  .picker-row { display: flex; gap: 18px; align-items: flex-start; }
+
+  .picker-left { flex: 1; min-width: 0; }
+
+  /* Gradient box */
+  #grad-canvas {
+    width: 100%; height: 220px;
+    cursor: crosshair;
+    border: 1.5px solid var(--black);
+    display: block;
+  }
+
+  /* Hue slider */
+  #hue-slider {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 16px;
+    margin-top: 10px;
+    border-radius: 0;
+    border: 1.5px solid var(--black);
+    background: linear-gradient(to right,
+      #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000);
+    outline: none; cursor: pointer;
+  }
+  #hue-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 14px; height: 20px;
+    background: white;
+    border: 2px solid black;
+    cursor: pointer;
+  }
+
+  /* RGB inputs */
+  .rgb-row { display: flex; gap: 8px; margin-top: 12px; }
+  .rgb-field { flex: 1; text-align: center; }
+  .rgb-field input {
+    width: 100%; padding: 6px 4px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px; font-weight: 700;
+    border: 1.5px solid var(--black);
+    background: #f9f9f9;
+    text-align: center; outline: none;
+  }
+  .rgb-field input:focus { border-color: var(--accent); }
+  .rgb-field .rgb-label { font-size: 9px; letter-spacing: 2px; color: #999; text-align: center; margin-top: 3px; }
+
+  /* Hex */
+  .hex-row { display: flex; gap: 8px; margin-top: 10px; align-items: center; }
+  .hex-row input {
+    flex: 1; padding: 8px 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px; font-weight: 700;
+    border: 1.5px solid var(--black);
+    background: #f9f9f9;
+    outline: none; letter-spacing: 2px;
+  }
+  .hex-row input:focus { border-color: var(--accent); }
+
+  .copy-btn {
+    padding: 8px 14px;
+    background: var(--black); color: #fff;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 14px; letter-spacing: 1px;
+    border: none; cursor: pointer;
+    transition: background 0.15s;
+  }
+  .copy-btn:hover { background: var(--accent); }
+  .copy-btn.copied { background: #1a7a1a; }
+
+  /* Picker right: preview + controls */
+  .picker-right { width: 200px; flex-shrink: 0; display: flex; flex-direction: column; gap: 14px; }
+
+  #color-preview {
+    width: 100%; height: 130px;
+    border: 2px solid var(--black);
+    background: #000;
+    box-shadow: 3px 3px 0 var(--black);
+  }
+
+  /* Size inputs */
+  .size-row { display: flex; gap: 6px; align-items: center; }
+  .size-row input {
+    flex: 1; padding: 7px 6px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px; font-weight: 700;
+    border: 1.5px solid var(--black);
+    background: #f9f9f9; outline: none; text-align: center;
+  }
+  .size-row input:focus { border-color: var(--accent); }
+  .size-sep { font-size: 13px; font-weight: 700; color: #aaa; }
+
+  .download-btn {
+    width: 100%;
+    padding: 12px;
+    background: var(--accent); color: #fff;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px; letter-spacing: 3px;
+    border: 2px solid var(--black);
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    box-shadow: 3px 3px 0 var(--black);
+  }
+  .download-btn:hover { background: #c03000; }
+  .download-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--black); }
+
+  /* Format toggle */
+  .format-row { display: flex; gap: 6px; }
+  .fmt-btn {
+    flex: 1; padding: 5px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px; font-weight: 700; letter-spacing: 1px;
+    border: 1.5px solid var(--black);
+    background: #f0f0f0; cursor: pointer;
+  }
+  .fmt-btn.active { background: var(--black); color: #fff; }
+
+  /* ─── FROM IMAGE PANEL ─── */
+  .drop-zone {
+    border: 2px dashed var(--border);
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+  }
+  .drop-zone:hover, .drop-zone.drag-over {
+    border-color: var(--accent); background: #fff8f5;
+  }
+  .drop-zone input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer;
+  }
+  .drop-zone .dz-icon { font-size: 36px; margin-bottom: 10px; }
+  .drop-zone .dz-text { font-size: 11px; letter-spacing: 2px; color: #888; }
+  .drop-zone .dz-sub { font-size: 9px; letter-spacing: 1px; color: #aaa; margin-top: 4px; }
+
+  .img-picker-area { display: none; position: relative; margin-top: 16px; }
+  .img-picker-area canvas { border: 2px solid var(--black); cursor: crosshair; max-width: 100%; display: block; }
+  .crosshair-hint { font-size: 9px; letter-spacing: 2px; color: #888; margin-top: 6px; text-align: center; }
+
+  .img-result-row { display: flex; gap: 16px; margin-top: 16px; align-items: stretch; }
+  .img-result-color { width: 80px; height: 80px; border: 2px solid var(--black); flex-shrink: 0; }
+  .img-result-info { flex: 1; display: flex; flex-direction: column; gap: 6px; justify-content: center; }
+  .img-hex { font-size: 20px; font-weight: 700; letter-spacing: 3px; }
+  .img-rgb { font-size: 11px; color: #666; letter-spacing: 1px; }
+
+  /* ─── CAMERA PANEL ─── */
+  .cam-wrap { position: relative; }
+  #cam-video {
+    width: 100%; border: 2px solid var(--black);
+    display: block; background: #000;
+  }
+  .cam-dot {
+    position: absolute;
+    width: 22px; height: 22px;
+    border: 2px solid white;
+    border-radius: 50%;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 0 1.5px black, inset 0 0 0 1.5px black;
+    top: 50%; left: 50%;
+    transition: top 0.05s, left 0.05s;
+  }
+  .cam-dot::after {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 4px; height: 4px;
+    background: var(--accent);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  #cam-canvas { display: none; }
+
+  .cam-start-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--black); color: #fff;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px; letter-spacing: 3px;
+    border: 2px solid var(--black);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .cam-start-btn:hover { background: var(--accent); }
+
+  .cam-color-row { display: flex; gap: 12px; margin-top: 16px; align-items: center; }
+  #cam-color-swatch { width: 64px; height: 64px; border: 2px solid var(--black); flex-shrink: 0; background: #888; }
+  .cam-color-info { flex: 1; }
+  #cam-hex { font-size: 22px; font-weight: 700; letter-spacing: 3px; }
+  #cam-rgb { font-size: 11px; color: #666; letter-spacing: 1px; margin-top: 4px; }
+
+  .cam-bottom-row { display: flex; gap: 10px; margin-top: 12px; }
+  .cam-btn {
+    flex: 1; padding: 10px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 15px; letter-spacing: 2px;
+    border: 2px solid var(--black);
+    cursor: pointer; transition: background 0.15s;
+  }
+  .cam-btn.primary { background: var(--accent); color: #fff; }
+  .cam-btn.primary:hover { background: #c03000; }
+  .cam-btn.secondary { background: #fff; color: var(--black); }
+  .cam-btn.secondary:hover { background: #eee; }
+
+  /* ─── SHARED BOTTOM DOWNLOAD ─── */
+  .panel-dl-row { display: flex; gap: 10px; margin-top: 18px; align-items: flex-end; }
+  .panel-dl-row .size-group { display: flex; flex-direction: column; gap: 4px; }
+  .panel-dl-row .size-row { flex-wrap: nowrap; }
+  .panel-dl-btn {
+    padding: 10px 20px;
+    background: var(--accent); color: #fff;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px; letter-spacing: 2px;
+    border: 2px solid var(--black);
+    cursor: pointer;
+    box-shadow: 3px 3px 0 var(--black);
+    transition: background 0.15s;
+    white-space: nowrap;
+  }
+  .panel-dl-btn:hover { background: #c03000; }
+
+  /* ─── TOAST ─── */
+  #toast {
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(60px);
+    background: var(--black); color: #fff;
+    font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 2px;
+    padding: 10px 24px;
+    border: 2px solid var(--accent);
+    opacity: 0; transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none; z-index: 999;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="l1">COLOR<span>XL</span></div>
+    <div class="sub">SOLID COLOR GENERATOR &amp; PICKER</div>
+  </div>
+  <div class="corner-info">FREE · NO SIGNUP<br>WORKS OFFLINE</div>
+</header>
+<hr class="divider">
+
+<div class="tabs-wrap">
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('pick')">PICK COLOR</button>
+    <button class="tab" onclick="switchTab('image')">FROM IMAGE</button>
+    <button class="tab" onclick="switchTab('camera')">CAMERA PICK</button>
+  </div>
+</div>
+
+<div class="panel-wrap">
+
+  <!-- ══ PANEL 1: PICK COLOR ══ -->
+  <div class="panel active" id="panel-pick">
+    <div class="picker-row">
+      <div class="picker-left">
+        <span class="field-label">Color Selector</span>
+        <canvas id="grad-canvas" width="400" height="220"></canvas>
+        <input type="range" id="hue-slider" min="0" max="360" value="0">
+
+        <div class="rgb-row">
+          <div class="rgb-field">
+            <input type="number" id="r-in" min="0" max="255" value="0">
+            <div class="rgb-label">R</div>
+          </div>
+          <div class="rgb-field">
+            <input type="number" id="g-in" min="0" max="255" value="0">
+            <div class="rgb-label">G</div>
+          </div>
+          <div class="rgb-field">
+            <input type="number" id="b-in" min="0" max="255" value="0">
+            <div class="rgb-label">B</div>
+          </div>
+        </div>
+
+        <div class="hex-row" style="margin-top:10px;">
+          <input type="text" id="hex-in" value="#000000" maxlength="7">
+          <button class="copy-btn" id="copy-hex-btn" onclick="copyHex()">COPY</button>
+        </div>
+      </div>
+
+      <div class="picker-right">
+        <div>
+          <span class="field-label">Preview</span>
+          <div id="color-preview"></div>
+        </div>
+
+        <div>
+          <span class="field-label">Export Size (px)</span>
+          <div class="size-row">
+            <input type="number" id="dl-w" value="1920" min="1" max="9999">
+            <span class="size-sep">×</span>
+            <input type="number" id="dl-h" value="1080" min="1" max="9999">
+          </div>
+        </div>
+
+        <div>
+          <span class="field-label">Format</span>
+          <div class="format-row">
+            <button class="fmt-btn active" id="fmt-png" onclick="setFmt('png')">PNG</button>
+            <button class="fmt-btn" id="fmt-jpg" onclick="setFmt('jpg')">JPG</button>
+            <button class="fmt-btn" id="fmt-webp" onclick="setFmt('webp')">WEBP</button>
+          </div>
+        </div>
+
+        <button class="download-btn" onclick="downloadColor()">⬇ DOWNLOAD</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PANEL 2: FROM IMAGE ══ -->
+  <div class="panel" id="panel-image">
+    <span class="field-label">Upload Image</span>
+    <div class="drop-zone" id="drop-zone">
+      <input type="file" accept="image/*" id="img-file-input" onchange="loadImageFile(event)">
+      <div class="dz-icon">🖼️</div>
+      <div class="dz-text">DROP IMAGE HERE OR CLICK TO BROWSE</div>
+      <div class="dz-sub">PNG, JPG, WEBP, GIF supported</div>
+    </div>
+
+    <div class="img-picker-area" id="img-picker-area">
+      <span class="field-label" style="margin-top:16px; display:block;">Click to pick a color from image</span>
+      <canvas id="img-canvas" onclick="pickFromImage(event)"></canvas>
+      <div class="crosshair-hint">↑ Click anywhere on the image to sample its color</div>
+
+      <div class="img-result-row" id="img-result-row" style="display:none;">
+        <div class="img-result-color" id="img-result-swatch"></div>
+        <div class="img-result-info">
+          <div class="img-hex" id="img-hex-out">#000000</div>
+          <div class="img-rgb" id="img-rgb-out">rgb(0, 0, 0)</div>
+          <button class="copy-btn" id="copy-img-hex" onclick="copyImgHex()" style="margin-top:6px; width:100%; text-align:center;">COPY HEX</button>
+        </div>
+      </div>
+
+      <div class="panel-dl-row">
+        <div class="size-group">
+          <span class="field-label">Export Size (px)</span>
+          <div class="size-row">
+            <input type="number" id="img-dl-w" value="1920" min="1" max="9999">
+            <span class="size-sep">×</span>
+            <input type="number" id="img-dl-h" value="1080" min="1" max="9999">
+          </div>
+        </div>
+        <button class="panel-dl-btn" onclick="downloadFromImg()">⬇ DOWNLOAD COLOR</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PANEL 3: CAMERA ══ -->
+  <div class="panel" id="panel-camera">
+    <div id="cam-idle">
+      <span class="field-label">Camera Color Picker</span>
+      <p style="font-size:11px; color:#888; letter-spacing:1px; margin-bottom:16px;">Point your camera at any surface. Move the dot to sample its color in real-time.</p>
+      <button class="cam-start-btn" onclick="startCamera()">▶ START CAMERA</button>
+    </div>
+
+    <div id="cam-live" style="display:none;">
+      <div class="cam-wrap" id="cam-wrap">
+        <video id="cam-video" autoplay playsinline></video>
+        <div class="cam-dot" id="cam-dot"></div>
+      </div>
+      <canvas id="cam-canvas"></canvas>
+
+      <div class="cam-color-row">
+        <div id="cam-color-swatch"></div>
+        <div class="cam-color-info">
+          <div id="cam-hex">#888888</div>
+          <div id="cam-rgb">rgb(136, 136, 136)</div>
+        </div>
+      </div>
+
+      <div class="cam-bottom-row">
+        <button class="cam-btn secondary" onclick="stopCamera()">■ STOP</button>
+        <button class="cam-btn primary" onclick="captureCamColor()">⬇ USE THIS COLOR</button>
+      </div>
+
+      <div class="panel-dl-row" id="cam-dl-row" style="display:none; margin-top:14px;">
+        <div class="size-group">
+          <span class="field-label">Export Size (px)</span>
+          <div class="size-row">
+            <input type="number" id="cam-dl-w" value="1920" min="1" max="9999">
+            <span class="size-sep">×</span>
+            <input type="number" id="cam-dl-h" value="1080" min="1" max="9999">
+          </div>
+        </div>
+        <button class="panel-dl-btn" onclick="downloadCamColor()">⬇ DOWNLOAD COLOR</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast">Copied!</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let currentHue = 0;
+let pickerX = 0, pickerY = 220;
+let currentRGB = { r: 0, g: 0, b: 0 };
+let currentFmt = 'png';
+let imgPickedRGB = null;
+let camPickedRGB = null;
+let camStream = null;
+let camAnimId = null;
+
+// ═══════════════════════════════════════════════════════
+// TAB SWITCH
+// ═══════════════════════════════════════════════════════
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', ['pick','image','camera'][i] === name);
+  });
+  document.querySelectorAll('.panel').forEach((p, i) => {
+    p.classList.toggle('active', ['panel-pick','panel-image','panel-camera'][i] === 'panel-'+name);
+  });
+  if (name !== 'camera' && camStream) stopCamera();
+}
+
+// ═══════════════════════════════════════════════════════
+// GRADIENT CANVAS
+// ═══════════════════════════════════════════════════════
+const gradCanvas = document.getElementById('grad-canvas');
+const gradCtx = gradCanvas.getContext('2d');
+
+function drawGradient() {
+  const w = gradCanvas.width, h = gradCanvas.height;
+  // Hue base color
+  const hsl = `hsl(${currentHue}, 100%, 50%)`;
+  // White → hue (horizontal)
+  const gH = gradCtx.createLinearGradient(0, 0, w, 0);
+  gH.addColorStop(0, '#ffffff');
+  gH.addColorStop(1, hsl);
+  gradCtx.fillStyle = gH;
+  gradCtx.fillRect(0, 0, w, h);
+  // Black overlay (vertical)
+  const gV = gradCtx.createLinearGradient(0, 0, 0, h);
+  gV.addColorStop(0, 'rgba(0,0,0,0)');
+  gV.addColorStop(1, 'rgba(0,0,0,1)');
+  gradCtx.fillStyle = gV;
+  gradCtx.fillRect(0, 0, w, h);
+  // Draw crosshair
+  gradCtx.beginPath();
+  gradCtx.arc(pickerX, pickerY, 7, 0, Math.PI * 2);
+  gradCtx.strokeStyle = '#fff';
+  gradCtx.lineWidth = 2;
+  gradCtx.stroke();
+  gradCtx.beginPath();
+  gradCtx.arc(pickerX, pickerY, 7, 0, Math.PI * 2);
+  gradCtx.strokeStyle = 'rgba(0,0,0,0.5)';
+  gradCtx.lineWidth = 1;
+  gradCtx.stroke();
+}
+
+function sampleGradient(x, y) {
+  const pixel = gradCtx.getImageData(x, y, 1, 1).data;
+  return { r: pixel[0], g: pixel[1], b: pixel[2] };
+}
+
+function updateFromGradient(x, y) {
+  pickerX = Math.max(0, Math.min(gradCanvas.width, x));
+  pickerY = Math.max(0, Math.min(gradCanvas.height, y));
+  drawGradient();
+  currentRGB = sampleGradient(pickerX, pickerY);
+  updateAllFromRGB();
+}
+
+gradCanvas.addEventListener('mousedown', e => {
+  const r = gradCanvas.getBoundingClientRect();
+  const sx = gradCanvas.width / r.width;
+  const sy = gradCanvas.height / r.height;
+  updateFromGradient((e.clientX - r.left) * sx, (e.clientY - r.top) * sy);
+  const move = ev => {
+    updateFromGradient((ev.clientX - r.left) * sx, (ev.clientY - r.top) * sy);
+  };
+  const up = () => {
+    window.removeEventListener('mousemove', move);
+    window.removeEventListener('mouseup', up);
+  };
+  window.addEventListener('mousemove', move);
+  window.addEventListener('mouseup', up);
+});
+
+gradCanvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const r = gradCanvas.getBoundingClientRect();
+  const sx = gradCanvas.width / r.width;
+  const sy = gradCanvas.height / r.height;
+  const t = e.touches[0];
+  updateFromGradient((t.clientX - r.left) * sx, (t.clientY - r.top) * sy);
+  const move = ev => {
+    const t2 = ev.touches[0];
+    updateFromGradient((t2.clientX - r.left) * sx, (t2.clientY - r.top) * sy);
+  };
+  const end = () => {
+    gradCanvas.removeEventListener('touchmove', move);
+    gradCanvas.removeEventListener('touchend', end);
+  };
+  gradCanvas.addEventListener('touchmove', move, { passive: false });
+  gradCanvas.addEventListener('touchend', end);
+}, { passive: false });
+
+// Hue slider
+document.getElementById('hue-slider').addEventListener('input', e => {
+  currentHue = parseInt(e.target.value);
+  drawGradient();
+  currentRGB = sampleGradient(pickerX, pickerY);
+  updateAllFromRGB();
+});
+
+// ═══════════════════════════════════════════════════════
+// RGB / HEX SYNC
+// ═══════════════════════════════════════════════════════
+function updateAllFromRGB() {
+  const { r, g, b } = currentRGB;
+  document.getElementById('r-in').value = r;
+  document.getElementById('g-in').value = g;
+  document.getElementById('b-in').value = b;
+  const hex = rgbToHex(r, g, b);
+  document.getElementById('hex-in').value = hex;
+  document.getElementById('color-preview').style.background = hex;
+}
+
+function rgbToHex(r, g, b) {
+  return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+}
+
+function hexToRGB(hex) {
+  const h = hex.replace('#', '');
+  if (h.length !== 6) return null;
+  return {
+    r: parseInt(h.slice(0, 2), 16),
+    g: parseInt(h.slice(2, 4), 16),
+    b: parseInt(h.slice(4, 6), 16)
+  };
+}
+
+['r-in', 'g-in', 'b-in'].forEach(id => {
+  document.getElementById(id).addEventListener('input', () => {
+    currentRGB = {
+      r: clamp(parseInt(document.getElementById('r-in').value) || 0),
+      g: clamp(parseInt(document.getElementById('g-in').value) || 0),
+      b: clamp(parseInt(document.getElementById('b-in').value) || 0)
+    };
+    document.getElementById('hex-in').value = rgbToHex(currentRGB.r, currentRGB.g, currentRGB.b);
+    document.getElementById('color-preview').style.background = rgbToHex(currentRGB.r, currentRGB.g, currentRGB.b);
+  });
+});
+
+document.getElementById('hex-in').addEventListener('input', e => {
+  const rgb = hexToRGB(e.target.value);
+  if (rgb) {
+    currentRGB = rgb;
+    document.getElementById('r-in').value = rgb.r;
+    document.getElementById('g-in').value = rgb.g;
+    document.getElementById('b-in').value = rgb.b;
+    document.getElementById('color-preview').style.background = e.target.value;
+  }
+});
+
+function clamp(v) { return Math.max(0, Math.min(255, v)); }
+
+// ═══════════════════════════════════════════════════════
+// FORMAT
+// ═══════════════════════════════════════════════════════
+function setFmt(f) {
+  currentFmt = f;
+  ['png','jpg','webp'].forEach(x => {
+    document.getElementById('fmt-'+x).classList.toggle('active', x === f);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// DOWNLOAD
+// ═══════════════════════════════════════════════════════
+function downloadSolidColor(r, g, b, w, h, fmt) {
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = `rgb(${r},${g},${b})`;
+  ctx.fillRect(0, 0, w, h);
+  const mime = fmt === 'jpg' ? 'image/jpeg' : fmt === 'webp' ? 'image/webp' : 'image/png';
+  const ext = fmt;
+  const hex = rgbToHex(r,g,b).replace('#','');
+  const a = document.createElement('a');
+  a.href = c.toDataURL(mime, 0.98);
+  a.download = `color-${hex}-${w}x${h}.${ext}`;
+  a.click();
+  showToast(`Downloaded ${w}×${h} ${fmt.toUpperCase()}!`);
+}
+
+function downloadColor() {
+  const w = parseInt(document.getElementById('dl-w').value) || 1920;
+  const h = parseInt(document.getElementById('dl-h').value) || 1080;
+  downloadSolidColor(currentRGB.r, currentRGB.g, currentRGB.b, w, h, currentFmt);
+}
+
+function downloadFromImg() {
+  if (!imgPickedRGB) { showToast('Pick a color from the image first!'); return; }
+  const w = parseInt(document.getElementById('img-dl-w').value) || 1920;
+  const h = parseInt(document.getElementById('img-dl-h').value) || 1080;
+  downloadSolidColor(imgPickedRGB.r, imgPickedRGB.g, imgPickedRGB.b, w, h, 'png');
+}
+
+function downloadCamColor() {
+  if (!camPickedRGB) { showToast('Capture a color first!'); return; }
+  const w = parseInt(document.getElementById('cam-dl-w').value) || 1920;
+  const h = parseInt(document.getElementById('cam-dl-h').value) || 1080;
+  downloadSolidColor(camPickedRGB.r, camPickedRGB.g, camPickedRGB.b, w, h, 'png');
+}
+
+// ═══════════════════════════════════════════════════════
+// COPY HEX
+// ═══════════════════════════════════════════════════════
+function copyHex() {
+  const hex = document.getElementById('hex-in').value;
+  navigator.clipboard.writeText(hex).then(() => {
+    const btn = document.getElementById('copy-hex-btn');
+    btn.textContent = 'COPIED!'; btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 1500);
+  });
+}
+
+function copyImgHex() {
+  const hex = document.getElementById('img-hex-out').textContent;
+  navigator.clipboard.writeText(hex).then(() => {
+    const btn = document.getElementById('copy-img-hex');
+    btn.textContent = 'COPIED!'; btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'COPY HEX'; btn.classList.remove('copied'); }, 1500);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ═══════════════════════════════════════════════════════
+// FROM IMAGE
+// ═══════════════════════════════════════════════════════
+const imgCanvas = document.getElementById('img-canvas');
+const imgCtx = imgCanvas.getContext('2d');
+let imgLoaded = false;
+
+const dz = document.getElementById('drop-zone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) loadImageFromFile(file);
+});
+
+function loadImageFile(event) {
+  const file = event.target.files[0];
+  if (file) loadImageFromFile(file);
+}
+
+function loadImageFromFile(file) {
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    const maxW = 620, maxH = 380;
+    let w = img.width, h = img.height;
+    if (w > maxW) { h = h * maxW / w; w = maxW; }
+    if (h > maxH) { w = w * maxH / h; h = maxH; }
+    imgCanvas.width = Math.round(w);
+    imgCanvas.height = Math.round(h);
+    imgCtx.drawImage(img, 0, 0, imgCanvas.width, imgCanvas.height);
+    imgLoaded = true;
+    document.getElementById('img-picker-area').style.display = 'block';
+    URL.revokeObjectURL(url);
+  };
+  img.src = url;
+}
+
+function pickFromImage(e) {
+  if (!imgLoaded) return;
+  const r = imgCanvas.getBoundingClientRect();
+  const sx = imgCanvas.width / r.width;
+  const sy = imgCanvas.height / r.height;
+  const x = Math.round((e.clientX - r.left) * sx);
+  const y = Math.round((e.clientY - r.top) * sy);
+  const px = imgCtx.getImageData(x, y, 1, 1).data;
+  imgPickedRGB = { r: px[0], g: px[1], b: px[2] };
+  const hex = rgbToHex(px[0], px[1], px[2]);
+  document.getElementById('img-result-swatch').style.background = hex;
+  document.getElementById('img-hex-out').textContent = hex;
+  document.getElementById('img-rgb-out').textContent = `rgb(${px[0]}, ${px[1]}, ${px[2]})`;
+  document.getElementById('img-result-row').style.display = 'flex';
+}
+
+// ═══════════════════════════════════════════════════════
+// CAMERA
+// ═══════════════════════════════════════════════════════
+const camVideo = document.getElementById('cam-video');
+const camCanvas = document.getElementById('cam-canvas');
+const camCtx = camCanvas.getContext('2d');
+const camDot = document.getElementById('cam-dot');
+const camWrap = document.getElementById('cam-wrap');
+
+camWrap.addEventListener('mousemove', e => {
+  if (!camStream) return;
+  const r = camWrap.getBoundingClientRect();
+  camDot.style.left = (e.clientX - r.left) + 'px';
+  camDot.style.top = (e.clientY - r.top) + 'px';
+});
+
+camWrap.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (!camStream) return;
+  const r = camWrap.getBoundingClientRect();
+  const t = e.touches[0];
+  camDot.style.left = (t.clientX - r.left) + 'px';
+  camDot.style.top = (t.clientY - r.top) + 'px';
+}, { passive: false });
+
+async function startCamera() {
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    camVideo.srcObject = camStream;
+    document.getElementById('cam-idle').style.display = 'none';
+    document.getElementById('cam-live').style.display = 'block';
+    camCanvas.width = 640; camCanvas.height = 480;
+    camAnimId = requestAnimationFrame(sampleCamera);
+  } catch (err) {
+    showToast('Camera access denied or unavailable');
+  }
+}
+
+function sampleCamera() {
+  if (!camStream) return;
+  camCtx.drawImage(camVideo, 0, 0, camCanvas.width, camCanvas.height);
+
+  // Sample pixel under dot
+  const wr = camWrap.getBoundingClientRect();
+  const vr = camVideo.getBoundingClientRect();
+  const dotL = parseFloat(camDot.style.left) || vr.width / 2;
+  const dotT = parseFloat(camDot.style.top) || vr.height / 2;
+  const sx = camCanvas.width / vr.width;
+  const sy = camCanvas.height / vr.height;
+  const px = Math.round(dotL * sx);
+  const py = Math.round(dotT * sy);
+  const clampedX = Math.max(0, Math.min(camCanvas.width - 1, px));
+  const clampedY = Math.max(0, Math.min(camCanvas.height - 1, py));
+  const pixel = camCtx.getImageData(clampedX, clampedY, 1, 1).data;
+  const hex = rgbToHex(pixel[0], pixel[1], pixel[2]);
+  document.getElementById('cam-color-swatch').style.background = hex;
+  document.getElementById('cam-hex').textContent = hex;
+  document.getElementById('cam-rgb').textContent = `rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`;
+  camPickedRGB = { r: pixel[0], g: pixel[1], b: pixel[2] };
+
+  camAnimId = requestAnimationFrame(sampleCamera);
+}
+
+function captureCamColor() {
+  document.getElementById('cam-dl-row').style.display = 'flex';
+  showToast('Color captured! Set size and download.');
+}
+
+function stopCamera() {
+  if (camStream) {
+    camStream.getTracks().forEach(t => t.stop());
+    camStream = null;
+  }
+  if (camAnimId) { cancelAnimationFrame(camAnimId); camAnimId = null; }
+  document.getElementById('cam-idle').style.display = 'block';
+  document.getElementById('cam-live').style.display = 'none';
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+drawGradient();
+updateAllFromRGB();
+</script>
+</body>
+</html>
